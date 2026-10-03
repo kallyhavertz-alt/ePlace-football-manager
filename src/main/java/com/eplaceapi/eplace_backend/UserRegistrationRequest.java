@@ -16,6 +16,9 @@ public record UserRegistrationRequest(
         @Pattern(regexp = "^\\+?[0-9]{9,15}$", message = "Please provide a valid phone number")
         String phoneNumber,
 
+        @NotBlank(message = "6-character password required")
+        String password,
+
         @NotNull(message = "Date of birth is required")
         LocalDate dateOfBirth
 ) {}

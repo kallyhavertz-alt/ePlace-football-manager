@@ -20,11 +20,20 @@ public class User {
     @Column(nullable = false, unique = true)
     private String email;
 
-    @Column(name = "phone_number", nullable = false, unique = true, length = 15)
+    @Column(name = "phone_number", unique = true, length = 15)
     private String phoneNumber;
 
-    @Column(name = "date_of_birth", nullable = false)
+    @Column(name = "date_of_birth")
     private LocalDate dateOfBirth;
+
+     @Column(length = 100)
+    private String password;
+
+    @Column(name = "google_id", unique = true)
+    private String googleId;
+
+    @Column(name = "is_verified")
+    private boolean isVerified = false;
 
     @Column(name = "created_at")
     private LocalDateTime createdAt = LocalDateTime.now();

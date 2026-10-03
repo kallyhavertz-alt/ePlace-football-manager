@@ -5,6 +5,7 @@ import com.eplaceapi.eplace_backend.UserResponse;
 import com.eplaceapi.eplace_backend.User;
 import com.eplaceapi.eplace_backend.UserRepository;
 import com.eplaceapi.eplace_backend.UserService;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDate;
@@ -14,7 +15,7 @@ import java.time.Period;
 public class UserServiceImpl implements UserService {
 
     private final UserRepository userRepository;
-
+    private final BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
     public UserServiceImpl(UserRepository userRepository) {
         this.userRepository = userRepository;
     }
@@ -22,11 +23,13 @@ public class UserServiceImpl implements UserService {
     @Override
     @Transactional
     public UserResponse registerUser(UserRegistrationRequest request) {
+        // 1. Structural Security Age Restriction Check
         if (Period.between(request.dateOfBirth(), LocalDate.now()).getYears() < 18) {
             throw new IllegalArgumentException("You must be 18 years or older to participate in eplace tournaments.");
         }
 
-         if (userRepository.existsByUsername(request.username())) {
+        // 2. Prevent Identity Duplication Loops
+        if (userRepository.existsByUsername(request.username())) {
             throw new IllegalArgumentException("This PES username is already registered.");
         }
         if (userRepository.existsByEmail(request.email())) {
@@ -41,6 +44,10 @@ public class UserServiceImpl implements UserService {
         user.setEmail(request.email().trim().toLowerCase());
         user.setPhoneNumber(request.phoneNumber().trim());
         user.setDateOfBirth(request.dateOfBirth());
+
+        if (request.password() != null && !request.password().isBlank()) {
+            user.setPassword(passwordEncoder.encode(request.password()));
+        }
 
         User savedUser = userRepository.save(user);
         return mapToResponse(savedUser);

@@ -2,6 +2,7 @@ HELP.md
 target/
 .mvn/wrapper/maven-wrapper.jar
 !**/src/main/**/target/
+!**/src/main/resources/firebase-account.json:1
 !**/src/test/**/target/
 
 ### STS ###
@@ -32,3 +33,5 @@ build/
 ### VS Code ###
 .vscode/
 .gitignore
+src\main\
+src\main\resources\firebase-account.json

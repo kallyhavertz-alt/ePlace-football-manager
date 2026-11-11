@@ -36,6 +36,9 @@ public class Notification {
     @Column(name = "is_read", nullable = false)
     private boolean isRead = false;
 
+    @Column(name = "sender_id")
+    private Long senderId;
+
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
 

@@ -2,7 +2,8 @@ package com.eplaceapi.eplace_backend;
 
 import com.google.firebase.messaging.FirebaseMessaging;
 import com.google.firebase.messaging.Message;
-
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -13,19 +14,24 @@ import java.util.stream.Collectors;
 @Service
 public class NotificationServiceImpl implements NotificationService {
 
-    private final NotificationRepository notificationRepository;
+    private static final Logger log = LoggerFactory.getLogger(NotificationServiceImpl.class);
 
-    public NotificationServiceImpl(NotificationRepository notificationRepository) {
+    private final NotificationRepository notificationRepository;
+    private final UserProfileRepository userProfileRepository;
+
+    public NotificationServiceImpl(NotificationRepository notificationRepository,
+                                   UserProfileRepository userProfileRepository) {
         this.notificationRepository = notificationRepository;
+        this.userProfileRepository = userProfileRepository;
     }
 
     @Override
     @Transactional
     public void sendNotificationToUser(Long userId, String title, String message) {
-        Notification notification = new Notification(userId, title, message, NotificationType.APPROVAL);
+        Notification notification = new Notification(userId, title, message, NotificationType.SYSTEM);
         notificationRepository.save(notification);
 
-         sendFcmPushToUserTopic(userId, title, message, "SOCIAL");
+        sendFcmPushToUserTopic(userId, title, message, NotificationType.SYSTEM.name(), null);
     }
 
     @Override
@@ -39,10 +45,10 @@ public class NotificationServiceImpl implements NotificationService {
                 username, amount, actionType, leagueName
         );
 
-         Notification notification = new Notification(userId, title, message, NotificationType.APPROVAL);
+        Notification notification = new Notification(userId, title, message, NotificationType.LEAGUE);
         notificationRepository.save(notification);
 
-         sendFcmPushToUserTopic(userId, title, message, "APPROVAL");
+        sendFcmPushToUserTopic(userId, title, message, NotificationType.LEAGUE.name(), null);
     }
 
     @Override
@@ -56,13 +62,25 @@ public class NotificationServiceImpl implements NotificationService {
                 username, amount, actionType, leagueName
         );
 
-         Notification notification = new Notification(userId, title, message, NotificationType.REJECTION);
+        Notification notification = new Notification(userId, title, message, NotificationType.LEAGUE);
         notificationRepository.save(notification);
 
-        sendFcmPushToUserTopic(userId, title, message, "REJECTION");
+        sendFcmPushToUserTopic(userId, title, message, NotificationType.LEAGUE.name(), null);
     }
 
-    private void sendFcmPushToUserTopic(Long userId, String title, String body, String type) {
+    @Override
+    @Transactional
+    public void sendFriendRequestNotification(Long userId, Long senderId, String title, String message) {
+        Notification notification = new Notification(userId, title, message, NotificationType.FRIEND_REQUEST);
+        notificationRepository.save(notification);
+
+        UserProfile senderProfile = (senderId != null) ? userProfileRepository.findByUserId(senderId).orElse(null) : null;
+        String pictureUrl = senderProfile != null ? senderProfile.getProfilePictureUrl() : null;
+
+        sendFcmPushToUserTopic(userId, title, message, NotificationType.FRIEND_REQUEST.name(), pictureUrl);
+    }
+
+    private void sendFcmPushToUserTopic(Long userId, String title, String body, String type, String profilePictureUrl) {
         try {
             String userTopic = "user_" + userId;
 
@@ -72,19 +90,21 @@ public class NotificationServiceImpl implements NotificationService {
                             .setBody(body)
                             .build();
 
-            Message fcmMessage = Message.builder()
+            Message.Builder messageBuilder = Message.builder()
                     .setTopic(userTopic)
                     .setNotification(fcmNotification)
                     .putData("type", type)
-                    .putData("userId", String.valueOf(userId))
-                    .build();
+                    .putData("userId", String.valueOf(userId));
 
-            String response = FirebaseMessaging.getInstance().send(fcmMessage);
-            System.out.println("✅ FCM Push Notification sent successfully to topic [" + userTopic + "]: " + response);
+            if (profilePictureUrl != null && !profilePictureUrl.isBlank()) {
+                messageBuilder.putData("senderProfilePictureUrl", profilePictureUrl);
+            }
+
+            String response = FirebaseMessaging.getInstance().send(messageBuilder.build());
+            log.info("✅ FCM Push Notification sent successfully to topic [{}]: {}", userTopic, response);
 
         } catch (Exception e) {
-            System.err.println("❌ Failed to send FCM Push Notification: " + e.getMessage());
-            e.printStackTrace();
+            log.error("❌ Failed to send FCM Push Notification: {}", e.getMessage(), e);
         }
     }
 
@@ -113,6 +133,13 @@ public class NotificationServiceImpl implements NotificationService {
     }
 
     private NotificationResponse mapToResponse(Notification n) {
+        String pictureUrl = null;
+
+        if (n.getSenderId() != null) {
+            UserProfile senderProfile = userProfileRepository.findByUserId(n.getSenderId()).orElse(null);
+            pictureUrl = senderProfile != null ? senderProfile.getProfilePictureUrl() : null;
+        }
+
         return new NotificationResponse(
                 n.getId(),
                 n.getUserId(),
@@ -120,6 +147,7 @@ public class NotificationServiceImpl implements NotificationService {
                 n.getMessage(),
                 n.getType(),
                 n.isRead(),
+                pictureUrl,
                 n.getCreatedAt()
         );
     }

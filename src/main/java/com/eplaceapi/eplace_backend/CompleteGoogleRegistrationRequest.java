@@ -1,4 +1,9 @@
 package com.eplaceapi.eplace_backend;
 
-public class GFGH {
-}
+import java.time.LocalDate;
+
+public record CompleteGoogleRegistrationRequest(
+        String phoneNumber,
+        LocalDate dateOfBirth,
+        String newPassword
+) {}

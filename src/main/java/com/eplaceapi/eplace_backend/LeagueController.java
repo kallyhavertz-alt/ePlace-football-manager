@@ -50,13 +50,7 @@ public class LeagueController {
         return ResponseEntity.ok(leagueService.getAdminDashboardData());
     }
 
-   /* @PostMapping("/requests/{id}/accept")
-    public ResponseEntity<LeagueResponse> acceptRequest(@PathVariable String id) {
-        Long numericId = Long.parseLong(id.replace("req_", ""));
-        return ResponseEntity.ok(leagueService.approveLeague(numericId));
-    }
 
-    */
    @PostMapping("/requests/{id}/accept")
    public ResponseEntity<LeagueResponse> acceptRequest(@PathVariable String id) {
        if (id.startsWith("req_join_")) {

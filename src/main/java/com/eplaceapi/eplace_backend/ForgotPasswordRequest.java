@@ -15,5 +15,5 @@ public record ForgotPasswordRequest(@NotBlank @Email String email) {}
         Long userId,
         String username,
         String email,
-        String jwtToken
-) {}
+        String jwtToken,
+        String phoneNumber) {}

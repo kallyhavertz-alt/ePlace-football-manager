@@ -1,10 +1,18 @@
 package com.eplaceapi.eplace_backend;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.List;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Service
@@ -14,6 +22,9 @@ public class UserProfileServiceImpl implements UserProfileService {
     private final UserProfileRepository userProfileRepository;
     private final UserRepository userRepository;
     private final FriendshipRepository friendshipRepository;
+    private final PasswordEncoder passwordEncoder;
+
+    private final String uploadDir = "uploads/profiles/";
 
     @Override
     @Transactional(readOnly = true)
@@ -39,6 +50,7 @@ public class UserProfileServiceImpl implements UserProfileService {
                 .email(user.getEmail())
                 .bio(profile.getBio())
                 .location(profile.getLocation())
+                .profilePictureUrl(profile.getProfilePictureUrl())
                 .efootballStrength(profile.getEfootballStrength())
                 .friendCount(friendCount)
                 .createdLeaguesLimit(profile.getCreatedLeaguesLimit())
@@ -64,15 +76,67 @@ public class UserProfileServiceImpl implements UserProfileService {
     @Override
     @Transactional
     public UserProfileResponseDTO updateProfile(Long userId, UpdateProfileRequestDTO request) {
+        return updateProfile(userId, request, null);
+    }
+
+    @Override
+    @Transactional
+    public UserProfileResponseDTO updateProfile(Long userId, UpdateProfileRequestDTO request, MultipartFile profilePicture) {
+
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new RuntimeException("User not found with id: " + userId));
+
+
+        if (request.getUsername() != null && !request.getUsername().isBlank()) {
+            String newUsername = request.getUsername().trim();
+            if (!newUsername.equals(user.getUsername())) {
+                if (userRepository.existsByUsername(newUsername)) {
+                    throw new IllegalArgumentException("Username is already taken.");
+                }
+                user.setUsername(newUsername);
+            }
+        }
+
+
+        if (request.getNewPassword() != null && !request.getNewPassword().isBlank()) {
+            if (request.getCurrentPassword() == null || request.getCurrentPassword().isBlank()) {
+                throw new IllegalArgumentException("Current password is required to set a new password.");
+            }
+
+             if (!passwordEncoder.matches(request.getCurrentPassword().trim(), user.getPassword())) {
+                throw new IllegalArgumentException("Incorrect current password.");
+            }
+
+
+            user.setPassword(passwordEncoder.encode(request.getNewPassword().trim()));
+        }
+        userRepository.save(user);
+
 
         UserProfile profile = userProfileRepository.findByUserId(userId)
                 .orElseGet(() -> createDefaultProfile(user));
 
-        if (request.getBio() != null) profile.setBio(request.getBio());
-        if (request.getLocation() != null) profile.setLocation(request.getLocation());
+
+        if (request.getBio() != null) profile.setBio(request.getBio().trim());
+        if (request.getLocation() != null) profile.setLocation(request.getLocation().trim());
         if (request.getEfootballStrength() != null) profile.setEfootballStrength(request.getEfootballStrength());
+
+          if (profilePicture != null && !profilePicture.isEmpty()) {
+            try {
+                File directory = new File(uploadDir);
+                if (!directory.exists()) {
+                    directory.mkdirs();
+                }
+
+                String fileName = "user_" + userId + "_" + UUID.randomUUID().toString().substring(0, 8) + ".jpg";
+                Path filePath = Paths.get(uploadDir + fileName);
+                Files.write(filePath, profilePicture.getBytes());
+
+                profile.setProfilePictureUrl("/uploads/profiles/" + fileName);
+            } catch (IOException e) {
+                throw new RuntimeException("Failed to store profile picture: " + e.getMessage());
+            }
+        }
 
         userProfileRepository.save(profile);
         return getUserProfile(userId);

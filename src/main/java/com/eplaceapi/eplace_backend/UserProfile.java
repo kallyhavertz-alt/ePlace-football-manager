@@ -23,6 +23,9 @@ public class UserProfile {
     private String bio;
     private String location;
 
+    @Column(name = "profile_picture_url")
+    private String profilePictureUrl;
+
     @Builder.Default
     private Integer efootballStrength = 3000;
 

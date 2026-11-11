@@ -29,6 +29,13 @@ public class User {
      @Column(length = 100)
     private String password;
 
+    @Column(name = "verification_code")
+    private String verificationCode;
+
+    @Column(name = "verification_code_expires_at")
+    private LocalDateTime verificationCodeExpiresAt;
+
+
     @Column(name = "google_id", unique = true)
     private String googleId;
 

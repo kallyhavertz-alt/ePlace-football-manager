@@ -9,5 +9,6 @@ public record NotificationResponse(
         String message,
         NotificationType type,
         boolean isRead,
+        String senderProfilePictureUrl,
         LocalDateTime createdAt
 ) {}

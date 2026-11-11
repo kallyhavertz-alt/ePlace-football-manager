@@ -7,4 +7,6 @@ public interface AuthService {
     AuthResponse loginWithGoogle(GoogleLoginRequest request);
     void initiateForgotPassword(ForgotPasswordRequest request);
     void resetPassword(ResetPasswordRequest request);
+    void sendVerificationCode(String email);
+    void verifyAccount(String email, String code);
 }

@@ -24,6 +24,7 @@ public class League {
     @Column(name = "account_code", nullable = false, length = 100)
     private String accountCode;
 
+
     @Column(name = "creator_id", nullable = false)
     private Long creatorId;
 

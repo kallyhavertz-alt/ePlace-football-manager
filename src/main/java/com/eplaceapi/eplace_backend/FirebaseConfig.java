@@ -20,7 +20,7 @@ public class FirebaseConfig {
             ClassPathResource serviceAccount = new ClassPathResource("firebase-account.json");
 
             if (!serviceAccount.exists()) {
-                System.err.println("❌ ERROR: firebase-account.json was not found in src/main/resources/");
+                System.err.println("ERROR: firebase-account.json was not found in src/main/resources/");
                 return;
             }
 
@@ -31,14 +31,14 @@ public class FirebaseConfig {
 
                 if (FirebaseApp.getApps().isEmpty()) {
                     FirebaseApp.initializeApp(options);
-                    System.out.println("✅ Firebase Application Initialized Successfully for ePlace!");
+                    System.out.println("Firebase Application Initialized Successfully for ePlace!");
                 } else {
-                    System.out.println("ℹ️ Firebase is already initialized.");
+                    System.out.println("ℹ Firebase is already initialized.");
                 }
             }
 
         } catch (Exception e) {
-            System.err.println("❌ Failed to initialize Firebase: " + e.getMessage());
+            System.err.println(" Failed to initialize Firebase: " + e.getMessage());
             e.printStackTrace();
         }
     }

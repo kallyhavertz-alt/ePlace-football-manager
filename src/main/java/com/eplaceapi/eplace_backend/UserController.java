@@ -9,7 +9,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping("/api/users")
+@RequestMapping("api/users")
 @CrossOrigin(origins = "*")
 public class UserController {
 
@@ -23,6 +23,14 @@ public class UserController {
     public ResponseEntity<UserResponse> registerUser(@Valid @RequestBody UserRegistrationRequest request) {
         UserResponse response = userService.registerUser(request);
         return new ResponseEntity<>(response, HttpStatus.CREATED);
+    }
+
+    @PutMapping("/{id}/complete-details")
+    public ResponseEntity<UserResponse> completeGoogleUserDetails(
+            @PathVariable Long id,
+            @Valid @RequestBody CompleteGoogleRegistrationRequest request) {
+        UserResponse response = userService.completeGoogleUserDetails(id, request);
+        return ResponseEntity.ok(response);
     }
 
     @GetMapping("/{id}")

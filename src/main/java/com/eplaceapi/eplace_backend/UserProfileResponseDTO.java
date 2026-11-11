@@ -10,6 +10,7 @@ public class UserProfileResponseDTO {
     private Long userId;
     private String username;
     private String email;
+    private String profilePictureUrl;
     private String bio;
     private String location;
     private Integer efootballStrength;

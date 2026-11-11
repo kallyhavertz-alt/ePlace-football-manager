@@ -11,26 +11,39 @@ import java.util.stream.Collectors;
 public class LeagueServiceImpl implements LeagueService {
 
     private final LeagueRepository leagueRepository;
+    private final UserRepository userRepository;
     private final EmailService emailService;
     private final NotificationService notificationService;
 
     @Autowired
-    public LeagueServiceImpl(LeagueRepository leagueRepository,
+    public LeagueServiceImpl(LeagueRepository leagueRepository, UserRepository userRepository,
                              EmailService emailService,
                              NotificationService notificationService) {
         this.leagueRepository = leagueRepository;
+        this.userRepository = userRepository;
         this.emailService = emailService;
         this.notificationService = notificationService;
     }
 
+
+
+
     @Override
     @Transactional
     public LeagueResponse createLeague(LeagueCreateRequest request, Long creatorId) {
+        User creator = userRepository.findById(creatorId)
+                .orElseThrow(() -> new IllegalArgumentException("User not found with id: " + creatorId));
+        System.out.println("🔍 DEBUG - User ID: " + creator.getId() + " | isVerified value: " + creator.isVerified());
+
+        if (!creator.isVerified()) {
+            throw new IllegalStateException("You must verify your email before creating a league.");
+        }
+
         League league = new League();
         league.setName(request.name().trim());
         league.setAccountCode(request.accountCode().trim());
         league.setCreatorId(creatorId);
-        league.setCreatorUsername(request.creatorUsername() != null ? request.creatorUsername() : "Player_" + creatorId);
+        league.setCreatorUsername(creator.getUsername());
         league.setJoinAmount(request.joinAmount());
         league.setMaxTeams(request.maxTeams());
         league.setCurrentTeams(1);
@@ -39,7 +52,7 @@ public class LeagueServiceImpl implements LeagueService {
 
         League savedLeague = leagueRepository.save(league);
 
-        // Send Email Notification to Admin
+
         emailService.sendAdminLeagueNotification(
                 savedLeague.getCreatorUsername(),
                 savedLeague.getName(),
@@ -60,11 +73,19 @@ public class LeagueServiceImpl implements LeagueService {
             throw new RuntimeException("League is full!");
         }
 
+
         if (league.getCreatorId() != null && league.getCreatorId().equals(userId)) {
             throw new IllegalArgumentException("You cannot join a league that you created.");
         }
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found with ID: " + userId));
 
-        String username = request.username() != null ? request.username() : "Player_" + userId;
+        if (!user.isVerified()) {
+            throw new IllegalStateException("You must verify your email before joining a league.");
+        }
+
+        String username = user.getUsername();
+
 
         emailService.sendAdminJoinNotification(
                 username,
@@ -206,7 +227,7 @@ public class LeagueServiceImpl implements LeagueService {
                 league.getCreatorUsername(),
                 league.getName(),
                 league.getJoinAmount(),
-                false // isCreation = false
+                false
         );
     }
 

@@ -12,7 +12,7 @@ import javax.crypto.SecretKey;
 public class JwtService {
 
     private final SecretKey key = Keys.secretKeyFor(SignatureAlgorithm.HS256);
-    private final long jwtExpirationMs = 86400000; // 24 Hours validity
+    private final long jwtExpirationMs = 86400000;
 
     public String generateToken(User user) {
         return Jwts.builder()

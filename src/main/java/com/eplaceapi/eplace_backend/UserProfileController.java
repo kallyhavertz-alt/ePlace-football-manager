@@ -1,8 +1,10 @@
 package com.eplaceapi.eplace_backend;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
@@ -23,10 +25,25 @@ public class UserProfileController {
         return ResponseEntity.ok(userProfileService.searchUsersByUsername(query));
     }
 
-    @PutMapping("/{userId}")
+    @PutMapping(value = "/{userId}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<UserProfileResponseDTO> updateProfile(
             @PathVariable Long userId,
-            @RequestBody UpdateProfileRequestDTO request) {
-        return ResponseEntity.ok(userProfileService.updateProfile(userId, request));
+            @RequestParam(required = false) String username,
+            @RequestParam(required = false) String currentPassword,
+            @RequestParam(required = false) String newPassword,
+            @RequestParam(required = false) String bio,
+            @RequestParam(required = false) String location,
+            @RequestParam(required = false) Integer efootballStrength,
+            @RequestParam(required = false) MultipartFile profilePicture) {
+
+        UpdateProfileRequestDTO request = new UpdateProfileRequestDTO();
+        request.setUsername(username);
+        request.setCurrentPassword(currentPassword);
+        request.setNewPassword(newPassword);
+        request.setBio(bio);
+        request.setLocation(location);
+        request.setEfootballStrength(efootballStrength);
+
+        return ResponseEntity.ok(userProfileService.updateProfile(userId, request, profilePicture));
     }
 }
